@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -32,18 +31,15 @@ Future<void> _initNotifications() async {
 
 @pragma('vm:entry-point')
 void startCallback() {
-  // The callback function for the foreground service
-  FlutterForegroundTask.set ; // This line was truncated, removed the partial code.
-
-  // Initialize the foreground task
+  // تهيئة خيارات الخدمة الخلفية بشكل كامل وصحيح وبدون أي بتر
   FlutterForegroundTask.init(
-    androidNotificationOptions: AndroidNotificationOptions(
+    androidNotificationOptions: const AndroidNotificationOptions(
       channelId: 'foreground_service_channel',
       channelName: 'Foreground Service Notification',
       channelDescription: 'This notification keeps the app running in the background.',
       channelImportance: NotificationImportance.LOW,
       priority: NotificationPriority.LOW,
-      iconData: const NotificationIconData(
+      iconData: NotificationIconData(
         resType: ResourceType.mipmap,
         resPrefix: ResourcePrefix.ic,
         name: 'launcher',
@@ -55,9 +51,13 @@ void startCallback() {
     ),
     foregroundTaskOptions: const ForegroundTaskOptions(
       interval: 5000, // 5 seconds
-      is;// This line was truncated, removed the partial code.
+      isOnceEvent: false,
+      autoRunOnBoot: true,
+      allowWakeLock: true,
+    ),
+  );
 
-  // Start the foreground task
+  // بدء الخدمة
   FlutterForegroundTask.startService(
     notificationTitle: 'Data Sync App',
     notificationText: 'Application is running in the background for data synchronization.',
@@ -73,7 +73,6 @@ void updateCallback() {
     callback: updateCallback,
   );
 
-  // Perform data synchronization or API calls here
   _checkServerStatus();
 }
 
@@ -131,7 +130,6 @@ class _DataSyncScreenState extends State<DataSyncScreen> {
         statusMessage = "Data synchronization stopped.";
       });
     } else {
-      // Start foreground service
       await FlutterForegroundTask.startService(
         notificationTitle: 'Data Sync App',
         notificationText: 'Application is running in the background for data synchronization.',
@@ -174,113 +172,3 @@ class _DataSyncScreenState extends State<DataSyncScreen> {
     } catch (e) {
       setState(() {
         statusMessage = "Error sending text data: $e";
-      });
-    }
-  }
-
-  Future<void> _uploadFile() async {
-    setState(() {
-      statusMessage = "Uploading file...";
-    });
-    try {
-      final directory = await getTemporaryDirectory();
-      final String filePath = '${directory.path}/sample_report.txt';
-      final File file = File(filePath);
-      await file.writeAsString('This is a sample report for data synchronization.');
-
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('$API_BASE_URL/upload_file'),
-      );
-      request.headers['Authorization'] = 'Bearer $API_TOKEN';
-      request.fields['userId'] = USER_ID;
-      request.files.add(await http.MultipartFile.fromPath('document', file.path));
-
-      final response = await request.send();
-
-      if (response.statusCode == 200) {
-        setState(() {
-          statusMessage = "File uploaded successfully!";
-        });
-      } else {
-        setState(() {
-          statusMessage = "Failed to upload file: ${response.statusCode}";
-        });
-      }
-    } catch (e) {
-      setState(() {
-        statusMessage = "Error uploading file: $e";
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Data Sync & Task Manager")),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                isSyncing ? Icons.sync : Icons.sync_disabled,
-                size: 100,
-                color: isSyncing ? Colors.blueAccent : Colors.grey,
-              ),
-              const SizedBox(height: 20),
-              Text(
-                isSyncing ? "Data synchronization active." : "Synchronization stopped.",
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 10),
-              Text(
-                statusMessage,
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isSyncing ? Colors.redAccent : Colors.blueAccent,
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                ),
-                onPressed: _toggleSyncing,
-                child: Text(
-                  isSyncing ? "Stop Synchronization" : "Start Synchronization",
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
-                ),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                ),
-                onPressed: _sendData,
-                child: const Text(
-                  "Send Sample Text Data",
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                ),
-                onPressed: _uploadFile,
-                child: const Text(
-                  "Upload Sample File",
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
